@@ -31,17 +31,15 @@ pub struct ReviewPaper<'info> {
     )]
     pub paper: Box<Account<'info, Paper>>, // Boxed
 
-    #[account(
-        seeds = [b"author", signer.key().as_ref(), paper.key().as_ref()],
-        bump = author_pda.bump
-    )]
-    pub author_pda: Option<Box<Account<'info, PaperAuthor>>>, // Boxed
+    #[account(seeds = [b"author", signer.key().as_ref(), paper.key().as_ref()], bump)]
+    /// CHECKED : I will check this
+    pub author_pda: UncheckedAccount<'info>,
 
     #[account(
         seeds = [b"purchase", signer.key().as_ref(), paper.key().as_ref()],
-        bump = purchase_pda.bump
+        bump = paper_owned.bump
     )]
-    pub purchase_pda: Option<Box<Account<'info, PaperOwned>>>, // Boxed
+    pub paper_owned: Box<Account<'info, PaperOwned>>, // Boxed
 
     #[account(
         init,
@@ -61,15 +59,8 @@ impl<'info> ReviewPaper<'info> {
         //Paper owners can't review own papers
         require!(self.paper.owner.key() != self.signer.key(), ErrorCode::Unauthorized);
 
-        //check if the reviewer owns the paper, if not an owner there is no proof he read it to issue a review
-        if let Some(_) = self.purchase_pda {
-            return Err(ErrorCode::Unauthorized.into());
-        }
-
-        //a check must be done to see if a paper_author exists for this signer. If it does, signer canot review
-        if let Some(_) = self.author_pda {
-            return Err(ErrorCode::Unauthorized.into());
-        }
+        //check data
+        require!(self.author_pda.lamports() == 0, ErrorCode::Unauthorized);
 
         let time = Clock::get()?.unix_timestamp as u64;
         //create review

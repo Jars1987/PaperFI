@@ -24,4 +24,6 @@ pub enum ErrorCode {
     IncorrectPricing,
     #[msg("New version can't be lower than the previous version")]
     InvalidVersion,
+    #[msg("Admin account already generated")]
+    AdminAlreadyExists,
 }

@@ -29,10 +29,11 @@ impl<'info> Initialize<'info> {
         // Enforce max 3 admins
         require!(config.admins.len() < PaperFiConfig::MAX_ADMINS, ErrorCode::TooManyAdmins);
 
-        // Add new admin if not already present, prevent duplication
-        if !config.admins.contains(&self.admin.key()) {
-            config.admins.push(self.admin.key());
-        }
+        // Check if the admin is already in the list
+        let is_admin_already_added = config.admins.iter().any(|admin| admin == &self.admin.key());
+        require!(!is_admin_already_added, ErrorCode::AdminAlreadyExists);
+
+        config.admins.push(self.admin.key());
 
         if config.fee.is_none() {
             config.fee = Some(2); // 2% - for now this is fixed
