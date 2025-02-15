@@ -121,8 +121,6 @@ pub struct EditPaperParams {
     pub paper_info_url: Option<String>,
     pub listed: Option<bool>,
     pub price: Option<u64>,
-    pub reviews: Option<u32>,
-    pub sales: Option<u32>,
     pub version: Option<u32>,
     pub paper_uri: Option<String>,
 }

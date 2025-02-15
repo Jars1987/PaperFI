@@ -11,7 +11,7 @@ pub use instructions::*;
 pub use state::*;
 pub use helpers::*;
 
-declare_id!("7Ucfh3P9fP4Z3YUo1kmKVTKCyf6da9ppsSiEGFCTGrx6");
+declare_id!("D1n8FqQcWH85gHNShcMhv8wWQMunYLoq6PAz7NtCwgaR");
 
 #[program]
 pub mod paperfi {
@@ -109,8 +109,8 @@ pub mod paperfi {
 }
 
 /* ------------------ Next Steps -------------------------
-    //Happy test and Unhappy test
-    //check unhappy model from Voting App
+    //Check review mechanism that for people to be able to review they must own the paper.
+    //Reviewers can either get the money back or get some tokens if we are going that way.
 
 Considerations:
 - Verify Badges needs to be done in the client --> https://developers.metaplex.com/core/plugins/verified-creators

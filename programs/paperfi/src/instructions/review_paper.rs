@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::state::{ UserAccount, Paper, Review };
+use crate::state::{ UserAccount, Paper, Review, PaperAuthor, PaperOwned };
 use crate::errors::ErrorCode;
 use crate::helpers::*;
 
@@ -15,21 +15,33 @@ pub struct ReviewPaper<'info> {
       seeds = [b"user", signer.key().as_ref()],
       bump = reviewer_user_account.bump
     )]
-    pub reviewer_user_account: Account<'info, UserAccount>, //to review they must sign up and create an account, no need for init_if_needed
+    pub reviewer_user_account: Box<Account<'info, UserAccount>>, // Boxed
 
     #[account(
       mut, 
       seeds = [b"user", paper.owner.as_ref()],
        bump = user_account.bump
       )]
-    pub user_account: Account<'info, UserAccount>, //paper owner user account
+    pub user_account: Box<Account<'info, UserAccount>>, // Boxed
 
     #[account(
     mut,
     seeds = [b"paper", paper.owner.as_ref(), &id.to_le_bytes()],
     bump = paper.bump
-)]
-    pub paper: Account<'info, Paper>,
+    )]
+    pub paper: Box<Account<'info, Paper>>, // Boxed
+
+    #[account(
+        seeds = [b"author", signer.key().as_ref(), paper.key().as_ref()],
+        bump = author_pda.bump
+    )]
+    pub author_pda: Option<Box<Account<'info, PaperAuthor>>>, // Boxed
+
+    #[account(
+        seeds = [b"purchase", signer.key().as_ref(), paper.key().as_ref()],
+        bump = purchase_pda.bump
+    )]
+    pub purchase_pda: Option<Box<Account<'info, PaperOwned>>>, // Boxed
 
     #[account(
         init,
@@ -38,7 +50,7 @@ pub struct ReviewPaper<'info> {
         seeds = [b"review", signer.key().as_ref(), paper.key().as_ref()],
         bump
     )]
-    pub review: Account<'info, Review>,
+    pub review: Account<'info, Review>, // Box to?
 
     pub system_program: Program<'info, System>,
 }
@@ -48,6 +60,16 @@ impl<'info> ReviewPaper<'info> {
     pub fn review_paper(&mut self, id: u64, verdict: Verdict, uri: String) -> Result<()> {
         //Paper owners can't review own papers
         require!(self.paper.owner.key() != self.signer.key(), ErrorCode::Unauthorized);
+
+        //check if the reviewer owns the paper, if not an owner there is no proof he read it to issue a review
+        if let Some(_) = self.purchase_pda {
+            return Err(ErrorCode::Unauthorized.into());
+        }
+
+        //a check must be done to see if a paper_author exists for this signer. If it does, signer canot review
+        if let Some(_) = self.author_pda {
+            return Err(ErrorCode::Unauthorized.into());
+        }
 
         let time = Clock::get()?.unix_timestamp as u64;
         //create review

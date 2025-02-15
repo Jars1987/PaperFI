@@ -14,6 +14,8 @@ pub struct EditUser<'info> {
          bump = user.bump
         )]
     pub user: Account<'info, UserAccount>,
+
+    pub system_program: Program<'info, System>,
 }
 
 pub fn edit_user(ctx: Context<EditUser>, params: EditUserParams) -> Result<()> {

@@ -2,6 +2,9 @@ use anchor_lang::prelude::*;
 
 use crate::state::{ Paper };
 use crate::helpers::*;
+use crate::errors::ErrorCode;
+use crate::{ validate_no_emojis };
+use crate::contains_emoji;
 
 #[derive(Accounts)]
 #[instruction(id: u64)]
@@ -26,6 +29,12 @@ impl<'info> EditPaper<'info> {
         update_field(&mut paper.paper_uri, params.paper_uri, 200)?;
         update_numeric_field(&mut paper.price, params.price)?;
         update_numeric_field(&mut paper.version, params.version)?;
+
+        //Since the fileds are optional lets make the requirement after the change (solana atomic)
+        //if there was a change that doesn't respect the requirements tx will fail and change wont happen
+        require!(paper.price == 0 || paper.price >= 1_000_000, ErrorCode::IncorrectPricing);
+        validate_no_emojis!(&paper.paper_info_url);
+        validate_no_emojis!(&paper.paper_uri);
 
         match params.listed {
             Some(listed) => {
