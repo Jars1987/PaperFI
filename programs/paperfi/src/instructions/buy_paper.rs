@@ -16,16 +16,16 @@ pub struct BuyPaper<'info> {
     )]
     pub buyer_user_account: Box<Account<'info, UserAccount>>, //already init, to use the platform must signup therefore user already exists
 
-    #[account(mut, seeds = [b"user", paper.owner.as_ref()], bump = user_account.bump)]
+    #[account(seeds = [b"user", paper.owner.as_ref()], bump = user_account.bump)]
     pub user_account: Box<Account<'info, UserAccount>>, //paper owner user account
 
-    #[account(seeds = [b"user_vault", paper.owner.as_ref()], bump = user_account.vault_bump)]
+    #[account(mut, seeds = [b"user_vault", paper.owner.as_ref()], bump = user_account.vault_bump)]
     pub user_vault: SystemAccount<'info>,
 
-    #[account(seeds = [b"paperfi_config"], bump = config.bump)]
+    #[account(mut, seeds = [b"paperfi_config"], bump = config.bump)]
     pub config: Box<Account<'info, PaperFiConfig>>,
 
-    #[account(seeds = [b"config_vault", config.key().as_ref()], bump = config.vault_bump)]
+    #[account(mut, seeds = [b"config_vault", config.key().as_ref()], bump = config.vault_bump)]
     pub config_vault: SystemAccount<'info>,
 
     #[account(

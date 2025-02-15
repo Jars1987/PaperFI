@@ -109,6 +109,8 @@ pub mod paperfi {
 }
 
 /* ------------------ Next Steps -------------------------
+    //w CHECK INITIALIZE ADMIN AND ALOWING THE SAME PUBKEY TO CREATE ANOTHER ADMIN ACCOUNT AND CONFIG
+    
     //Check review mechanism that for people to be able to review they must own the paper.
     //Reviewers can either get the money back or get some tokens if we are going that way.
 

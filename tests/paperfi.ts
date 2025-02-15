@@ -81,7 +81,7 @@ describe('PaperFi', () => {
     //airdrop roger
     let tx6 = await provider.connection.requestAirdrop(
       roger.publicKey,
-      2 * LAMPORTS_PER_SOL
+      5 * LAMPORTS_PER_SOL
     );
     await confirmTransaction(connection, tx6, 'confirmed');
   });
@@ -883,13 +883,227 @@ describe('PaperFi', () => {
 
     assert.equal(authAccount.author.toString(), roger.publicKey.toString());
   });
-  it('Roger confirms the ownership', async () => {});
+  it('Roger confirms the ownership', async () => {
+    const [paperAccountAdress, _b] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('paper'), bob.publicKey.toBuffer(), id.toBuffer('le', 8)],
+      programId
+    );
 
-  // PLEASE REVIEW REVIEW_PAPER INSTRUCTIONS REQURIEMENTS
+    const [paperAuthorAdress, _bu] = await PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('author'),
+        roger.publicKey.toBuffer(),
+        paperAccountAdress.toBuffer(),
+      ],
+      programId
+    );
 
+    try {
+      const initilializeIx = await program.methods
+        .verify(id)
+        .accountsPartial({
+          author: roger.publicKey,
+          paperAuthor: paperAuthorAdress,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: roger.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(initilializeIx);
+
+      const signature = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [roger]
+      );
+    } catch (e: any) {
+      console.log(e.message);
+      assert.fail('Roger failed to confirm ownership');
+    }
+
+    //get the paper_author account
+    const authAccount = await program.account.paperAuthor.fetch(
+      paperAuthorAdress
+    );
+
+    assert.equal(authAccount.verify, true);
+  });
   //------------ Initialize Review Paper Tests ------------------
-  it('Karen Reviews Paper with invalid parameters test', async () => {});
-  it('Bond buys the Paper', async () => {});
+  it('Karen Reviews Paper with invalid parameters test', async () => {
+    const verdict = { approved: {} }; // This is an example of using the `Verdict.Approved`
+    const uri = 'http://example.com/review';
+
+    const [paperAccountAddress, _bump] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('paper'), bob.publicKey.toBuffer(), id.toBuffer('le', 8)],
+      programId
+    );
+
+    const [reviewerAccountAddress, _] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('user'), karen.publicKey.toBuffer()],
+      programId
+    );
+
+    const [userAccountAddress, _b] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('user'), bob.publicKey.toBuffer()],
+      programId
+    );
+
+    const [reviewAccountAddress, _bu] = await PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('review'),
+        karen.publicKey.toBuffer(),
+        paperAccountAddress.toBuffer(),
+      ],
+      programId
+    );
+
+    // Generate the PDA for Karen's purchase (this shouldn't exist because she hasn't purchased the paper)
+    const [purchasePdaAddress, _purchaseBump] =
+      await PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('purchase'),
+          karen.publicKey.toBuffer(),
+          paperAccountAddress.toBuffer(),
+        ],
+        programId
+      );
+
+    try {
+      const reviewIx = await program.methods
+        .reviewPaper(id, verdict, uri)
+        .accountsPartial({
+          signer: karen.publicKey,
+          reviewerUserAccount: reviewerAccountAddress,
+          userAccount: userAccountAddress,
+          paper: paperAccountAddress,
+          authorPda: undefined, // You can leave the author pda undefined if needed
+          purchasePda: purchasePdaAddress, // Pass the purchase PDA (Karen hasn't purchased, so it should fail)
+          review: reviewAccountAddress,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: karen.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(reviewIx);
+
+      // Send the transaction, this should fail
+      await anchor.web3.sendAndConfirmTransaction(connection, tx, [karen]);
+
+      // If this line is reached, then the test failed
+      assert.fail('Karen was able to review paper without purchasing it');
+    } catch (e: any) {
+      // If the error occurs, it means the review failed as expected
+      assert.isOk(
+        "Karen wasn't able to review the paper without purchasing it"
+      );
+    }
+  });
+
+  it('Bond buys the Paper', async () => {
+    //buyer user account
+    const [buyerAccountAddress, _b] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('user'), bond.publicKey.toBuffer()],
+      programId
+    );
+
+    //paper owmer account
+    const [paperOwnerAccountAddress, _] =
+      await PublicKey.findProgramAddressSync(
+        [Buffer.from('user'), bob.publicKey.toBuffer()],
+        programId
+      );
+
+    //paper owner vault
+    const [userAccountAddress, _bu] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('user_vault'), bob.publicKey.toBuffer()],
+      programId
+    );
+
+    //config account
+    const [configAccountAddress, _b_] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('paperfi_config')],
+      programId
+    );
+
+    //config vault
+    const [configVaultAccountAddress, _bum] =
+      await PublicKey.findProgramAddressSync(
+        [Buffer.from('config_vault'), configAccountAddress.toBuffer()],
+        programId
+      );
+
+    //paper account
+    const [paperAccountAddress, _bump] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('paper'), bob.publicKey.toBuffer(), id.toBuffer('le', 8)],
+      programId
+    );
+
+    //paper owner account
+    const [purchaseAccountAddress, bump] =
+      await PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('purchase'),
+          bond.publicKey.toBuffer(),
+          paperAccountAddress.toBuffer(),
+        ],
+        programId
+      );
+
+    try {
+      const buyIx = await program.methods
+        .buyPaper(id)
+        .accountsPartial({
+          buyer: bond.publicKey,
+          buyerUserAccount: buyerAccountAddress,
+          userAccount: paperOwnerAccountAddress,
+          userVault: userAccountAddress,
+          config: configAccountAddress,
+          configVault: configVaultAccountAddress,
+          paper: paperAccountAddress,
+          paperOwned: purchaseAccountAddress,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: bond.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(buyIx);
+
+      // Send the transaction, this should fail
+      await anchor.web3.sendAndConfirmTransaction(connection, tx, [bond]);
+
+      console.log('Paper bought successfully');
+    } catch (e: any) {
+      console.error('Error:', e);
+      if (e.logs) {
+        console.error('Logs:', e.logs);
+        assert.fail('Failed to buy the paper');
+      }
+    }
+
+    //get the paper_owned account
+
+    const paperOwned = await program.account.paperOwned.fetch(
+      purchaseAccountAddress
+    );
+
+    assert.equal(paperOwned.paper.toString(), paperAccountAddress.toString());
+    assert.equal(paperOwned.buyer.toString(), bond.publicKey.toString());
+  });
   it('Bond Reviews Paper as approved', async () => {});
   it('Karen buys the Paper', async () => {});
   it('Karen Reviews Paper as request for review', async () => {});
