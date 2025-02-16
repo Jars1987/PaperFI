@@ -26,4 +26,6 @@ pub enum ErrorCode {
     InvalidVersion,
     #[msg("Admin account already generated")]
     AdminAlreadyExists,
+    #[msg("A publisher can't by a paper that he already owns")]
+    PublisherCantBuy,
 }

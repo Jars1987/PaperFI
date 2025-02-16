@@ -26,6 +26,8 @@ pub struct AddAuthor<'info> {
 
 impl<'info> AddAuthor<'info> {
     pub fn add_author(&mut self, author: Pubkey, id: u64, bump: &AddAuthorBumps) -> Result<()> {
+        require!(self.paper.owner == self.owner.key(), ErrorCode::Unauthorized);
+
         self.paper_author.set_inner(PaperAuthor {
             author,
             paper: self.paper.key(),

@@ -44,11 +44,18 @@ pub struct BuyPaper<'info> {
     )]
     pub paper_owned: Account<'info, PaperOwned>,
 
+    #[account(seeds = [b"author", buyer.key().as_ref(), paper.key().as_ref()], bump)]
+    /// CHECKED : Intruction check this
+    pub author_pda: UncheckedAccount<'info>,
+
     pub system_program: Program<'info, System>,
 }
 
 impl<'info> BuyPaper<'info> {
     pub fn buy_paper(&mut self, _id: u64, bump: u8) -> Result<()> {
+        //MAKE A REQUIRMENT - Paper Author does not pay for the paper. Set price to 0
+        require!(self.buyer.key() != self.paper.owner, ErrorCode::PublisherCantBuy);
+
         //create PaperOwned
         self.paper_owned.set_inner(PaperOwned {
             buyer: self.buyer.key(),
@@ -57,8 +64,10 @@ impl<'info> BuyPaper<'info> {
             bump,
         });
 
-        //Transfer paper price amount from buyer to user vault
-        if self.paper.price > 0 {
+        let is_author: bool = !self.author_pda.to_account_info().data_is_empty();
+
+        //----------------------------> Add to the if satement "And not an author (check for account balance or data)"
+        if self.paper.price > 0 && !is_author {
             let cpi_program = self.system_program.to_account_info();
             let cpi_accounts = Transfer {
                 from: self.buyer.to_account_info().clone(),

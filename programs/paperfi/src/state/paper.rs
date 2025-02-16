@@ -59,15 +59,17 @@ impl ReviewStatus {
         }
     }
 
-    //should I add "Review Requested" too? For now math
     pub fn rejection_ratio(&self) -> i64 {
-        if self.rejected + self.approved == 0 {
-            0;
-        }
-        let denominator = self.rejected + self.approved;
-        let ratio = self.rejected.checked_div(denominator).unwrap_or(0); // If division fails, return 0
+        let total_reviews = self.rejected + self.approved + self.review_requested;
 
-        // Multiply the result by 100 to convert it to a percentage
-        ratio * 100
+        if total_reviews == 0 {
+            return 0; // Return 0 if there are no reviews
+        }
+
+        // Use floating-point division to handle the fraction or it will return 0 because it is an integer
+        let ratio = (self.rejected as f64) / (total_reviews as f64);
+
+        // Multiply by 100 to get percentage
+        (ratio * 100.0) as i64
     }
 }

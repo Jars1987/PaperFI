@@ -59,8 +59,8 @@ impl<'info> ReviewPaper<'info> {
         //Paper owners can't review own papers
         require!(self.paper.owner.key() != self.signer.key(), ErrorCode::Unauthorized);
 
-        //check data
-        require!(self.author_pda.lamports() == 0, ErrorCode::Unauthorized);
+        //check that author account doesn't exist by checking that the PDA has no data, authors can't review their own papers
+        require!(self.author_pda.to_account_info().data_is_empty(), ErrorCode::Unauthorized);
 
         let time = Clock::get()?.unix_timestamp as u64;
         //create review
@@ -78,14 +78,17 @@ impl<'info> ReviewPaper<'info> {
         paper.timestamp = time.clone();
         paper.review_status.update(&verdict);
 
-        // Check rejection ratio - set to 20% for now
-        if paper.review_status.rejection_ratio() > 20 {
+        let ratio = paper.review_status.rejection_ratio();
+        msg!("Rejection ratio before if statement: {}", ratio);
+
+        if ratio > 20 {
             paper.listed = false;
         }
 
+        let user = &mut self.reviewer_user_account;
         //update user state
-        self.reviewer_user_account.reviews += 1;
-        self.reviewer_user_account.timestamp = time;
+        user.reviews += 1;
+        user.timestamp = time;
 
         Ok(())
     }
