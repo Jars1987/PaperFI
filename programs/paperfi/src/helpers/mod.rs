@@ -113,7 +113,6 @@ pub struct PrintBadgeArgs {
     pub uri: String,
     pub achievement: String,
     pub record: u32,
-    pub timestamp: u64,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize)]

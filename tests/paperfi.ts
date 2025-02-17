@@ -17,10 +17,12 @@ import { randomBytes } from 'node:crypto';
 import { assert, expect } from 'chai';
 import {
   MPL_CORE_PROGRAM_ID,
+  fetchAsset,
   fetchCollection,
   mplCore,
 } from '@metaplex-foundation/mpl-core';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { time } from 'node:console';
 
 const programId = new PublicKey('D1n8FqQcWH85gHNShcMhv8wWQMunYLoq6PAz7NtCwgaR');
 const mplCoreProgramId = new PublicKey(MPL_CORE_PROGRAM_ID);
@@ -48,7 +50,11 @@ describe('PaperFi', () => {
   const roger = Keypair.generate();
 
   //make collection keyair
-  const badge = Keypair.generate();
+  const badgeCollection = Keypair.generate();
+  //make collection keyair for failed tx
+  const badgeCollection2 = Keypair.generate();
+  //make nft badge keypair
+  const badgeNFT = Keypair.generate();
 
   //create a random id for the paper
   const id = new BN(randomBytes(8));
@@ -57,7 +63,6 @@ describe('PaperFi', () => {
   const umi = createUmi('http://127.0.0.1:8899').use(mplCore());
 
   before('Preparing enviorement for testing:', async () => {
-    console.log('Badge:', badge.publicKey.toString());
     console.log('--------- Airdroping Lamports ----------');
 
     //airdrop  Admin
@@ -1869,7 +1874,7 @@ describe('PaperFi', () => {
         .makeBadge(createBadgeParams)
         .accountsPartial({
           admin: admin.publicKey,
-          badge: badge.publicKey,
+          badge: badgeCollection.publicKey,
           config: configAccountAdress,
           mplCoreProgram: mplCoreProgramId,
           systemProgram: SystemProgram.programId,
@@ -1888,22 +1893,12 @@ describe('PaperFi', () => {
       const sig = await anchor.web3.sendAndConfirmTransaction(
         connection,
         tx,
-        [admin, badge],
+        [admin, badgeCollection],
         {
           skipPreflight: true,
+          commitment: 'finalized',
         }
       );
-
-      /* 
-        .catch(e => {
-          getLogs(connection, e);
-        });
-      If I catxh it, I get: 
-        AccountNotFoundError: The account of type [CollectionV1] was not found at the provided address [5RgJBLkm2sqjdCnJMR3dqN3cD1qiqVNyN3FEkXHybEPD].
-Source: SDK
-        */
-
-      console.log(sig);
     } catch (e) {
       console.log(e.message);
       console.log(e.logs);
@@ -1913,7 +1908,7 @@ Source: SDK
     //Solana SDK and metaplex uses different Publickeys types
     const collectionAsset = await fetchCollection(
       umi,
-      badge.publicKey.toBase58()
+      badgeCollection.publicKey.toBase58()
     );
 
     // Perform assertions to verify the asset's properties
@@ -1921,15 +1916,408 @@ Source: SDK
     assert.equal(collectionAsset.name, 'Publisher');
     assert.equal(
       collectionAsset.uri,
-      'arweave.net/Q_njzBo9OP491p8WVqwx-um0Q4Bbk1MO2BsnnQ2ClY8'
+      'https://arweave.net/Q_njzBo9OP491p8WVqwx-um0Q4Bbk1MO2BsnnQ2ClY8'
     );
   });
-  it('Admin Creates NFT Badge with invalid parameters', async () => {});
-  it('Bob Mints NFT Badge', async () => {});
-  it('Bob Mints NFT Badge with invalid parameters', async () => {});
-  //------------ Initialize Withdra Funds Test ------------------
-  it('Bob Withdraws Funds', async () => {});
-  it('Bob Withdraws Funds with invalid parameters', async () => {});
-  it('Admin Withdraws Funds', async () => {});
-  it('Admin Withdraws Funds with invalid parameters', async () => {});
+  it('User attempts to Creates NFT Badge (not admin)', async () => {
+    const createBadgeParams = {
+      name: 'Publisher',
+      uri: 'https://arweave.net/Q_njzBo9OP491p8WVqwx-um0Q4Bbk1MO2BsnnQ2ClY8',
+    };
+
+    //Config account
+    const [configAccountAdress, _] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('paperfi_config')],
+      programId
+    );
+
+    try {
+      const reviewIx = await program.methods
+        .makeBadge(createBadgeParams)
+        .accountsPartial({
+          admin: bob.publicKey,
+          badge: badgeCollection2.publicKey,
+          config: configAccountAdress,
+          mplCoreProgram: mplCoreProgramId,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: bob.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(reviewIx);
+
+      // Send the transaction, this should fail
+      const sig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [bob, badgeCollection2],
+        {
+          skipPreflight: true,
+          commitment: 'finalized',
+        }
+      );
+
+      assert.fail('user should have failed to create the NFT Collection Badge');
+    } catch (e) {
+      assert.isOk('User failed to create the NFT Collection Badge as expected');
+    }
+  });
+  it('Bob Mints NFT Badge', async () => {
+    const printBadgeArgs = {
+      name: 'papers',
+      uri: 'https://arweave.net/Q_njzBo9OP491p8WVqwx-um0Q4Bbk1MO2BsnnQ2ClY8',
+      achievement: 'First Timer',
+      record: 1,
+    };
+
+    const [userAccountAddress, _b] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('user'), bob.publicKey.toBuffer()],
+      programId
+    );
+
+    //Config account
+    const [configAccountAdress, _] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('paperfi_config')],
+      programId
+    );
+
+    try {
+      const reviewIx = await program.methods
+        .mintAchievementNft(printBadgeArgs)
+        .accountsPartial({
+          user: bob.publicKey,
+          userAccount: userAccountAddress,
+          config: configAccountAdress,
+          collection: badgeCollection.publicKey,
+          asset: badgeNFT.publicKey,
+          mplCoreProgram: mplCoreProgramId,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: bob.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(reviewIx);
+
+      // Send the transaction, this should fail
+      const sig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [bob, badgeNFT],
+        {
+          skipPreflight: true,
+          commitment: 'finalized',
+        }
+      );
+    } catch (e) {
+      console.log(e.message);
+      assert.fail('User was not able to print the NFT Badge');
+    }
+
+    //Solana SDK and metaplex uses different Publickeys types
+    const asset = await fetchAsset(umi, badgeNFT.publicKey.toBase58());
+    expect(asset).to.exist;
+    assert.equal(asset.name, 'papers');
+  });
+  it('Bob Mints NFT Badge with invalid parameters', async () => {
+    const printBadgeArgs = {
+      name: 'papers',
+      uri: 'https://arweave.net/Q_njzBo9OP491p8WVqwx-um0Q4Bbk1MO2BsnnQ2ClY8',
+      achievement: 'First Timer',
+      record: 10,
+    };
+
+    const [userAccountAddress, _b] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('user'), bob.publicKey.toBuffer()],
+      programId
+    );
+
+    //Config account
+    const [configAccountAdress, _] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('paperfi_config')],
+      programId
+    );
+
+    try {
+      const reviewIx = await program.methods
+        .mintAchievementNft(printBadgeArgs)
+        .accountsPartial({
+          user: bob.publicKey,
+          userAccount: userAccountAddress,
+          config: configAccountAdress,
+          collection: badgeCollection.publicKey,
+          asset: badgeNFT.publicKey,
+          mplCoreProgram: mplCoreProgramId,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: bob.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(reviewIx);
+
+      // Send the transaction, this should fail
+      const sig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [bob, badgeNFT],
+        {
+          skipPreflight: true,
+          commitment: 'finalized',
+        }
+      );
+
+      assert.fail(
+        'User was able to print the NFT Badge with invalid parameters'
+      );
+    } catch (e) {
+      assert.isOk(
+        "User wasn't able to print the NFT Badge with invalid parameters"
+      );
+    }
+  });
+
+  //------------ Initialize Withdraw Funds Test ------------------
+  it('Bob Withdraws Funds', async () => {
+    const [userVaultAddress, userVaultBump] =
+      await PublicKey.findProgramAddressSync(
+        [Buffer.from('user_vault'), bob.publicKey.toBuffer()],
+        program.programId
+      );
+
+    const initialBalance = await connection.getBalance(bob.publicKey);
+
+    const vaultBalance = await connection.getBalance(userVaultAddress);
+
+    //Estimate transaction fees
+    const blockhashContext = await connection.getLatestBlockhash();
+
+    const withdrawIx = await program.methods
+      .userWithdraw(userVaultBump)
+      .accountsPartial({
+        user: bob.publicKey,
+        userVault: userVaultAddress,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+
+    const message = new anchor.web3.Transaction({
+      feePayer: bob.publicKey,
+      blockhash: blockhashContext.blockhash,
+      lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+    })
+      .add(withdrawIx)
+      .compileMessage();
+
+    const feeCalculator = await connection.getFeeForMessage(message);
+    const txFee = feeCalculator.value || 0; // If null, default to 0
+    try {
+      const withdrawIx = await program.methods
+        .userWithdraw(userVaultBump)
+        .accountsPartial({
+          user: bob.publicKey,
+          userVault: userVaultAddress,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: bob.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(withdrawIx);
+
+      const sig = await anchor.web3.sendAndConfirmTransaction(connection, tx, [
+        bob,
+      ]);
+    } catch (e) {
+      console.log(e.message);
+      console.log(e.logs);
+      assert.fail('Bob failed to withdraw funds');
+    }
+
+    const finalBalance = await connection.getBalance(bob.publicKey);
+    const balanceDiff = finalBalance - initialBalance;
+    const vaultBalanceAfter = await connection.getBalance(userVaultAddress);
+
+    assert.equal(vaultBalanceAfter, 0);
+    assert.equal(balanceDiff, vaultBalance - txFee);
+  });
+
+  it('Bob Withdraws Funds with invalid parameters', async () => {
+    const [userVaultAddress, userVaultBump] =
+      await PublicKey.findProgramAddressSync(
+        [Buffer.from('user_vault'), bob.publicKey.toBuffer()],
+        program.programId
+      );
+
+    try {
+      const withdrawIx = await program.methods
+        .userWithdraw(userVaultBump)
+        .accountsPartial({
+          user: bob.publicKey,
+          userVault: userVaultAddress,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: bob.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(withdrawIx);
+
+      const sig = await anchor.web3.sendAndConfirmTransaction(connection, tx, [
+        bob,
+      ]);
+
+      assert.fail(
+        'Bob was able to withdraw funds when the vault had 0 balance'
+      );
+    } catch (e) {
+      assert.isOk(
+        'Bob was not able to withdraw funds when the vault had 0 balance'
+      );
+    }
+  });
+  it('Admin Withdraws Funds', async () => {
+    //config account
+    const [configAccountAddress, _b_] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('paperfi_config')],
+      programId
+    );
+
+    //config vault
+    const [configVaultAccountAddress, _bum] =
+      await PublicKey.findProgramAddressSync(
+        [Buffer.from('config_vault'), configAccountAddress.toBuffer()],
+        programId
+      );
+
+    const initialBalance = await connection.getBalance(admin.publicKey);
+
+    const vaultBalance = await connection.getBalance(configVaultAccountAddress);
+
+    //Estimate transaction fees
+    const blockhashContext = await connection.getLatestBlockhash();
+
+    const withdrawIx = await program.methods
+      .adminWithdraw()
+      .accountsPartial({
+        admin: admin.publicKey,
+        config: configAccountAddress,
+        configVault: configVaultAccountAddress,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+
+    const message = new anchor.web3.Transaction({
+      feePayer: admin.publicKey,
+      blockhash: blockhashContext.blockhash, // ✅ Use the blockhash
+      lastValidBlockHeight: blockhashContext.lastValidBlockHeight, // ✅ Ensure it's valid
+    })
+      .add(withdrawIx)
+      .compileMessage();
+
+    const feeCalculator = await connection.getFeeForMessage(message);
+    const txFee = feeCalculator.value || 0;
+
+    try {
+      const withdrawIx = await program.methods
+        .adminWithdraw()
+        .accountsPartial({
+          admin: admin.publicKey,
+          config: configAccountAddress,
+          configVault: configVaultAccountAddress,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: admin.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(withdrawIx);
+
+      const sig = await anchor.web3.sendAndConfirmTransaction(connection, tx, [
+        admin,
+      ]);
+    } catch (e) {
+      console.log(e.message);
+      console.log(e.logs);
+      assert.fail('Admin failed to withdraw the funds');
+    }
+
+    const finalBalance = await connection.getBalance(admin.publicKey);
+    const balanceDiff = finalBalance - initialBalance;
+    const vaultBalanceAfter = await connection.getBalance(
+      configVaultAccountAddress
+    );
+
+    assert.equal(vaultBalanceAfter, 0);
+    assert.equal(balanceDiff, vaultBalance - txFee);
+  });
+  it('Admin Withdraws Funds with vault empty', async () => {
+    //config account
+    const [configAccountAddress, _b_] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('paperfi_config')],
+      programId
+    );
+
+    //config vault
+    const [configVaultAccountAddress, _bum] =
+      await PublicKey.findProgramAddressSync(
+        [Buffer.from('config_vault'), configAccountAddress.toBuffer()],
+        programId
+      );
+
+    try {
+      const withdrawIx = await program.methods
+        .adminWithdraw()
+        .accountsPartial({
+          admin: admin.publicKey,
+          config: configAccountAddress,
+          configVault: configVaultAccountAddress,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: admin.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(withdrawIx);
+
+      const sig = await anchor.web3.sendAndConfirmTransaction(connection, tx, [
+        admin,
+      ]);
+
+      assert.fail('Admin was able to withdraw funds when the vault was empty');
+    } catch (e) {
+      assert.isOk(
+        "Admin wasn't able to withdraw funds when the vault was empty"
+      );
+    }
+  });
 });

@@ -30,16 +30,16 @@ pub struct PrintBadge<'info> {
     pub user_account: Account<'info, UserAccount>,
 
     #[account(seeds = [b"paperfi_config"], bump = config.bump)]
-    pub config: Account<'info, PaperFiConfig>,
+    pub config: Account<'info, PaperFiConfig>, //update authority
 
     #[account(
        mut,
-       constraint = badge.update_authority == config.key(),
+       constraint = collection.update_authority == config.key(),
    )]
-    pub badge: Account<'info, BaseCollectionV1>,
+    pub collection: Account<'info, BaseCollectionV1>,
 
     #[account(mut)]
-    pub print: Signer<'info>, //will be transformed into a Core Collection Account during this instruction
+    pub asset: Signer<'info>, //asset will be transformed into a Core Collection Account during this instruction
 
     #[account(address = MPL_CORE_ID)]
     /// CHECK: This is checked by the address constraint
@@ -65,7 +65,7 @@ impl<'info> PrintBadge<'info> {
             },
             Attribute {
                 key: "timestamp".to_string(),
-                value: args.timestamp.to_string(),
+                value: Clock::get()?.unix_timestamp.to_string(),
             }
         ];
 
@@ -88,19 +88,18 @@ impl<'info> PrintBadge<'info> {
 
         let signer_seeds: &[&[u8]] = &[b"paperfi_config", &[self.config.bump]];
 
-        // Create the Ticket
+        // Cannot specify both an update authority and collection on an asset so we don't pass the update authority
         CreateV2CpiBuilder::new(&self.mpl_core_program.to_account_info())
-            .asset(&self.print.to_account_info())
-            .collection(Some(&self.badge.to_account_info()))
+            .asset(&self.asset.to_account_info())
+            .collection(Some(&self.collection.to_account_info()))
+            .authority(Some(&self.config.to_account_info())) //no need as the authority is the signer
             .payer(&self.user.to_account_info())
-            .authority(Some(&self.config.to_account_info()))
             .owner(Some(&self.user.to_account_info()))
             .system_program(&self.system_program.to_account_info())
             .name(args.name)
             .uri(args.uri)
             .plugins(edition_plugin)
-            .invoke_signed(&[signer_seeds])?;
-
+            .invoke_signed(&[signer_seeds])?; //update authority is config so we need invoke with seeds
         Ok(())
     }
 }

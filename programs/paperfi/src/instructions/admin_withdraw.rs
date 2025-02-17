@@ -31,7 +31,7 @@ impl<'info> AdminWithdraw<'info> {
 
         let cpi_program = self.system_program.to_account_info();
         let cpi_accounts = Transfer {
-            from: self.config.to_account_info(),
+            from: self.config_vault.to_account_info(),
             to: self.admin.to_account_info(),
         };
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
