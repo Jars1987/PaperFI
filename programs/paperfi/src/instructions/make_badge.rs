@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use mpl_core::{
+    self,
     ID as MPL_CORE_ID,
     fetch_external_plugin_adapter_data_info,
     fetch_plugin,
@@ -20,18 +21,15 @@ use crate::helpers::*;
 
 #[derive(Accounts)]
 pub struct MakeBadge<'info> {
-    //Payer
     #[account(mut)]
-    pub admin: Signer<'info>,
-
-    //Our update authority
-    #[account(seeds = [b"paperfi_config"], bump = config.bump)]
-    pub config: Account<'info, PaperFiConfig>,
+    pub admin: Signer<'info>, //payer
 
     //will be transformed into a Core Collection Account during this instruction.
-
     #[account(mut)]
-    pub badge: Signer<'info>,
+    pub badge: Signer<'info>, //collection
+
+    #[account(seeds = [b"paperfi_config"], bump = config.bump)]
+    pub config: Account<'info, PaperFiConfig>, //update authority
 
     #[account(address = MPL_CORE_ID)]
     /// CHECK: this account is checked by the address constraint

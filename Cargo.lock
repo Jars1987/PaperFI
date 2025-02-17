@@ -937,6 +937,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "kaigan"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ba15de5aeb137f0f65aa3bf82187647f1285abfe5b20c80c2c37f7007ad519a"
+dependencies = [
+ "anchor-lang",
+ "borsh 0.10.4",
+ "serde",
+]
+
+[[package]]
 name = "keccak"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1080,13 +1091,14 @@ dependencies = [
 
 [[package]]
 name = "mpl-core"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "299e6db3f7d9ab8fba383e3c6e88f8869063e694cbeb56da8f1bdd355e255f8f"
+checksum = "9d6c4e2e24ef8fb0029b0ccdde256c4581c8b7c82e0d3fae65c9904f879a2e17"
 dependencies = [
  "anchor-lang",
  "base64 0.22.1",
  "borsh 0.10.4",
+ "kaigan",
  "modular-bitfield",
  "num-derive 0.3.3",
  "num-traits",

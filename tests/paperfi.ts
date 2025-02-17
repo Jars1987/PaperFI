@@ -8,12 +8,22 @@ import {
   SystemProgram,
 } from '@solana/web3.js';
 import { before, it } from 'mocha';
-import { confirmTransaction, makeKeypairs } from '@solana-developers/helpers';
+import {
+  confirmTransaction,
+  getLogs,
+  makeKeypairs,
+} from '@solana-developers/helpers';
 import { randomBytes } from 'node:crypto';
-import { assert } from 'chai';
-import { rejects } from 'node:assert';
+import { assert, expect } from 'chai';
+import {
+  MPL_CORE_PROGRAM_ID,
+  fetchCollection,
+  mplCore,
+} from '@metaplex-foundation/mpl-core';
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 
 const programId = new PublicKey('D1n8FqQcWH85gHNShcMhv8wWQMunYLoq6PAz7NtCwgaR');
+const mplCoreProgramId = new PublicKey(MPL_CORE_PROGRAM_ID);
 
 describe('PaperFi', () => {
   // Configure the client to use the local cluster.
@@ -37,11 +47,17 @@ describe('PaperFi', () => {
   //create User (author) keypair
   const roger = Keypair.generate();
 
+  //make collection keyair
+  const badge = Keypair.generate();
+
   //create a random id for the paper
   const id = new BN(randomBytes(8));
   const id2 = new BN(randomBytes(8));
 
+  const umi = createUmi('http://127.0.0.1:8899').use(mplCore());
+
   before('Preparing enviorement for testing:', async () => {
+    console.log('Badge:', badge.publicKey.toString());
     console.log('--------- Airdroping Lamports ----------');
 
     //airdrop  Admin
@@ -1823,9 +1839,6 @@ describe('PaperFi', () => {
       console.log(e.logs);
       assert.fail('Nancy failed to review the paper');
     }
-
-    // Print the logs to the console
-
     //get the review account
     const reviewAccount = await program.account.review.fetch(
       reviewAccountAddress
@@ -1839,7 +1852,78 @@ describe('PaperFi', () => {
   });
 
   //------------ Initialize NFT Badges Test ------------------
-  it('Admin Creates NFT Badge', async () => {});
+  it('Admin Creates NFT Badge', async () => {
+    const createBadgeParams = {
+      name: 'Publisher',
+      uri: 'https://arweave.net/Q_njzBo9OP491p8WVqwx-um0Q4Bbk1MO2BsnnQ2ClY8',
+    };
+
+    //Config account
+    const [configAccountAdress, _] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('paperfi_config')],
+      programId
+    );
+
+    try {
+      const reviewIx = await program.methods
+        .makeBadge(createBadgeParams)
+        .accountsPartial({
+          admin: admin.publicKey,
+          badge: badge.publicKey,
+          config: configAccountAdress,
+          mplCoreProgram: mplCoreProgramId,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction();
+
+      const blockhashContext = await connection.getLatestBlockhash();
+
+      const tx = new anchor.web3.Transaction({
+        feePayer: admin.publicKey,
+        blockhash: blockhashContext.blockhash,
+        lastValidBlockHeight: blockhashContext.lastValidBlockHeight,
+      }).add(reviewIx);
+
+      // Send the transaction, this should fail
+      const sig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        tx,
+        [admin, badge],
+        {
+          skipPreflight: true,
+        }
+      );
+
+      /* 
+        .catch(e => {
+          getLogs(connection, e);
+        });
+      If I catxh it, I get: 
+        AccountNotFoundError: The account of type [CollectionV1] was not found at the provided address [5RgJBLkm2sqjdCnJMR3dqN3cD1qiqVNyN3FEkXHybEPD].
+Source: SDK
+        */
+
+      console.log(sig);
+    } catch (e) {
+      console.log(e.message);
+      console.log(e.logs);
+      assert.fail('Admin failed to create the NFT Collection Badge');
+    }
+
+    //Solana SDK and metaplex uses different Publickeys types
+    const collectionAsset = await fetchCollection(
+      umi,
+      badge.publicKey.toBase58()
+    );
+
+    // Perform assertions to verify the asset's properties
+    expect(collectionAsset).to.exist;
+    assert.equal(collectionAsset.name, 'Publisher');
+    assert.equal(
+      collectionAsset.uri,
+      'arweave.net/Q_njzBo9OP491p8WVqwx-um0Q4Bbk1MO2BsnnQ2ClY8'
+    );
+  });
   it('Admin Creates NFT Badge with invalid parameters', async () => {});
   it('Bob Mints NFT Badge', async () => {});
   it('Bob Mints NFT Badge with invalid parameters', async () => {});
