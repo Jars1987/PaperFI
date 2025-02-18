@@ -5,7 +5,7 @@ use crate::{ validate_no_emojis };
 use crate::contains_emoji;
 
 #[derive(Accounts)]
-#[instruction(id: u64)]
+#[instruction(_id: u64)]
 pub struct NewPaper<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -17,7 +17,7 @@ pub struct NewPaper<'info> {
         init,
         payer = owner,
         space = Paper::INIT_SPACE,
-        seeds = [b"paper", owner.key().as_ref(), &id.to_le_bytes()], // ** Check foot notes
+        seeds = [b"paper", owner.key().as_ref(), &_id.to_le_bytes()], // ** Check foot notes
         bump
     )]
     pub paper: Account<'info, Paper>,
@@ -37,7 +37,7 @@ pub struct NewPaper<'info> {
 impl<'info> NewPaper<'info> {
     pub fn new_paper(
         &mut self,
-        id: u64,
+        _id: u64,
         paper_info_url: String,
         price: u64,
         uri: String,
@@ -73,10 +73,11 @@ impl<'info> NewPaper<'info> {
             paper_uri: uri,
         });
 
+        //update user_account
         self.user_account.papers += 1;
         self.user_account.timestamp = Clock::get()?.unix_timestamp as u64;
 
-        //set author
+        //set paper owner as author
         self.paper_author.set_inner(PaperAuthor {
             author: self.owner.key(),
             paper: self.paper.key(),

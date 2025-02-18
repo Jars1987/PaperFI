@@ -4,7 +4,7 @@ use crate::state::{ Paper, UserAccount, PaperOwned, PaperFiConfig };
 use crate::errors::ErrorCode;
 
 #[derive(Accounts)]
-#[instruction(id: u64)]
+#[instruction(_id: u64)]
 pub struct BuyPaper<'info> {
     #[account(mut)]
     pub buyer: Signer<'info>,
@@ -30,7 +30,7 @@ pub struct BuyPaper<'info> {
 
     #[account(
         mut,
-        seeds = [b"paper", paper.owner.as_ref(), &id.to_le_bytes()], // ** Check foot notes
+        seeds = [b"paper", paper.owner.as_ref(), &_id.to_le_bytes()], // ** Check foot notes
         bump = paper.bump
     )]
     pub paper: Box<Account<'info, Paper>>,
@@ -53,10 +53,10 @@ pub struct BuyPaper<'info> {
 
 impl<'info> BuyPaper<'info> {
     pub fn buy_paper(&mut self, _id: u64, bump: u8) -> Result<()> {
-        //MAKE A REQUIRMENT - Paper Author does not pay for the paper. Set price to 0
+        //Publishers already own the papers
         require!(self.buyer.key() != self.paper.owner, ErrorCode::PublisherCantBuy);
 
-        //create PaperOwned
+        //create PaperOwned (proof of purchase)
         self.paper_owned.set_inner(PaperOwned {
             buyer: self.buyer.key(),
             paper: self.paper.key(),
@@ -64,9 +64,10 @@ impl<'info> BuyPaper<'info> {
             bump,
         });
 
+        //Check if buyer is an author
         let is_author: bool = !self.author_pda.to_account_info().data_is_empty();
 
-        //----------------------------> Add to the if satement "And not an author (check for account balance or data)"
+        //Check if the paper has a price and not author
         if self.paper.price > 0 && !is_author {
             let cpi_program = self.system_program.to_account_info();
             let cpi_accounts = Transfer {
@@ -76,6 +77,7 @@ impl<'info> BuyPaper<'info> {
 
             let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
+            //Pay the paper owner
             transfer(cpi_ctx, self.paper.price)?;
 
             //get fee percentage
@@ -94,11 +96,11 @@ impl<'info> BuyPaper<'info> {
             };
 
             let cpi_ctx_2 = CpiContext::new(self.system_program.to_account_info(), cpi_accounts_2);
+            //Pays the fees to PaperFi
             transfer(cpi_ctx_2, fee_amount)?;
         }
 
         //register sales in the paper state
-
         self.paper.sales += 1;
 
         //register purchase in the buyer user_account state
@@ -107,11 +109,3 @@ impl<'info> BuyPaper<'info> {
         Ok(())
     }
 }
-
-/*
-Note:
-
-In future instead of using the Owner in the Paper PDA we can provide a list of the co-authors in the instructions, 
-verify that they are indeed co-authors through Author Paper account verification and share the sell percentage through
-all the user accounts verified
-*/

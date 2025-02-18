@@ -7,14 +7,14 @@ use crate::{ validate_no_emojis };
 use crate::contains_emoji;
 
 #[derive(Accounts)]
-#[instruction(id: u64)]
+#[instruction(_id: u64)]
 pub struct EditPaper<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
     #[account(
     mut,
-    seeds = [b"paper", owner.key().as_ref(), &id.to_le_bytes()],
+    seeds = [b"paper", owner.key().as_ref(), &_id.to_le_bytes()],
     bump = paper.bump
 )]
     pub paper: Account<'info, Paper>,
@@ -23,7 +23,7 @@ pub struct EditPaper<'info> {
 }
 
 impl<'info> EditPaper<'info> {
-    pub fn edit_paper(&mut self, id: u64, params: EditPaperParams) -> Result<()> {
+    pub fn edit_paper(&mut self, _id: u64, params: EditPaperParams) -> Result<()> {
         let paper = &mut self.paper;
         update_field(&mut paper.paper_info_url, params.paper_info_url, 200)?;
         update_field(&mut paper.paper_uri, params.paper_uri, 200)?;

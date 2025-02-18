@@ -1,14 +1,11 @@
 use anchor_lang::prelude::*;
 use mpl_core::{
     ID as MPL_CORE_ID,
-    fetch_external_plugin_adapter_data_info,
-    fetch_plugin,
     instructions::{ CreateV2CpiBuilder },
     accounts::{ BaseCollectionV1 },
     types::{
         Attribute,
         Attributes,
-        UpdateAuthority,
         PermanentFreezeDelegate,
         Edition,
         Plugin,

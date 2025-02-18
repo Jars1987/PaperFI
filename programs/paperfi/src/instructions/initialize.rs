@@ -35,6 +35,7 @@ impl<'info> Initialize<'info> {
 
         config.admins.push(self.admin.key());
 
+        //Check if confi has been initalized by checking the fee
         if config.fee.is_none() {
             config.fee = Some(2); // 2% - for now this is fixed
             config.bump = bumps.config;

@@ -1,10 +1,8 @@
 use anchor_lang::prelude::*;
+use crate::state::{ PaperAuthor };
 
-use crate::state::{ Paper, PaperAuthor };
-use crate::errors::ErrorCode;
 
 #[derive(Accounts)]
-#[instruction(id: u64)]
 pub struct VerifyAuthor<'info> {
     #[account(mut)]
     pub author: Signer<'info>,
@@ -20,7 +18,7 @@ pub struct VerifyAuthor<'info> {
 }
 
 impl<'info> VerifyAuthor<'info> {
-    pub fn verify_author(&mut self, id: u64) -> Result<()> {
+    pub fn verify_author(&mut self) -> Result<()> {
         if !self.paper_author.verify {
             self.paper_author.verify = true;
         }

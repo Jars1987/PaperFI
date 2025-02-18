@@ -4,12 +4,12 @@ use crate::state::{ Paper, PaperAuthor };
 use crate::errors::ErrorCode;
 
 #[derive(Accounts)]
-#[instruction(author: Pubkey, id: u64)]
+#[instruction(author: Pubkey, _id: u64)]
 pub struct AddAuthor<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
-    #[account(seeds = [b"paper", owner.key().as_ref(), &id.to_le_bytes()], bump = paper.bump)]
+    #[account(seeds = [b"paper", owner.key().as_ref(), &_id.to_le_bytes()], bump = paper.bump)]
     pub paper: Account<'info, Paper>,
 
     #[account(
@@ -25,8 +25,8 @@ pub struct AddAuthor<'info> {
 }
 
 impl<'info> AddAuthor<'info> {
-    pub fn add_author(&mut self, author: Pubkey, id: u64, bump: &AddAuthorBumps) -> Result<()> {
-        require!(self.paper.owner == self.owner.key(), ErrorCode::Unauthorized);
+    pub fn add_author(&mut self, author: Pubkey, _id: u64, bump: &AddAuthorBumps) -> Result<()> {
+        require!(self.paper.owner == self.owner.key(), ErrorCode::Unauthorized); //kind of double kill
 
         self.paper_author.set_inner(PaperAuthor {
             author,

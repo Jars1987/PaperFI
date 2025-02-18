@@ -12,7 +12,7 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "Localnet"
-wallet = "~/.config/solana/id.json"
+wallet = "~/desktop/turbin3/q12025/turbine-repo/Q1_25_Builder_jars1987/turbin3-solana-starter/ts/keypair.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

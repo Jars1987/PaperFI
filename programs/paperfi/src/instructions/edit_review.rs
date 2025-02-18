@@ -1,18 +1,16 @@
 use anchor_lang::prelude::*;
-
 use crate::state::{ Paper, Review };
-use crate::errors::ErrorCode;
 use crate::helpers::*;
 
 #[derive(Accounts)]
-#[instruction(id: u64)]
+#[instruction(_id: u64)]
 pub struct EditReview<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
 
     #[account(
     mut,
-    seeds = [b"paper", paper.owner.as_ref(), &id.to_le_bytes()],
+    seeds = [b"paper", paper.owner.as_ref(), &_id.to_le_bytes()],
     bump = paper.bump
 )]
     pub paper: Account<'info, Paper>,
@@ -24,7 +22,7 @@ pub struct EditReview<'info> {
 }
 
 impl<'info> EditReview<'info> {
-    pub fn edit_review(&mut self, id: u64, verdict: Verdict) -> Result<()> {
+    pub fn edit_review(&mut self, _id: u64, verdict: Verdict) -> Result<()> {
         // Check if the previous verdict was `ReviewRequested`
         if self.review.verdict == Verdict::ReviewRequested {
             // If previous verdict was `ReviewRequested`, decrement the count
@@ -35,7 +33,7 @@ impl<'info> EditReview<'info> {
         self.review.verdict = verdict.clone();
         self.review.timestamp = Clock::get()?.unix_timestamp as u64;
 
-        //update Review Status based on the new verdict
+        //update Paper Review Status based on the new verdict
         self.paper.review_status.update(&verdict);
         self.paper.timestamp = Clock::get()?.unix_timestamp as u64;
 

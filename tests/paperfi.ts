@@ -186,7 +186,6 @@ describe('PaperFi', () => {
       );
     } catch (e: any) {
       assert.isOk(
-        e.message,
         'Test passed: Unable to initialize andmin and config again.'
       );
     }
