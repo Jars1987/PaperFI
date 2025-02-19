@@ -4,14 +4,14 @@
 resolution = true
 skip-lint = false
 
-[programs.localnet]
+[programs.devnet]
 paperfi = "D1n8FqQcWH85gHNShcMhv8wWQMunYLoq6PAz7NtCwgaR"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "~/desktop/turbin3/q12025/turbine-repo/Q1_25_Builder_jars1987/turbin3-solana-starter/ts/keypair.json"
 
 [scripts]

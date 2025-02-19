@@ -22,7 +22,8 @@ import {
   mplCore,
 } from '@metaplex-foundation/mpl-core';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { time } from 'node:console';
+import fs from 'fs';
+import path from 'path';
 
 const programId = new PublicKey('D1n8FqQcWH85gHNShcMhv8wWQMunYLoq6PAz7NtCwgaR');
 const mplCoreProgramId = new PublicKey(MPL_CORE_PROGRAM_ID);
@@ -36,6 +37,42 @@ describe('PaperFi', () => {
 
   const program = anchor.workspace.PaperFi as Program<Paperfi>;
 
+  const umi = createUmi('https://api.devnet.solana.com').use(mplCore());
+
+   //make collection keyair
+   const badgeCollection = Keypair.generate();
+   //make collection keyair for failed tx
+   const badgeCollection2 = Keypair.generate();
+   //make nft badge keypair
+   const badgeNFT = Keypair.generate();
+ 
+   //create a random id for the paper
+   const id = new BN(randomBytes(8));
+   const id2 = new BN(randomBytes(8));
+ 
+//DEVNET WALLETS
+console.log("--------------- LOADING WALLETS -----------------")
+// Function to load a keypair from a JSON file
+function loadWallet(filename: string): Keypair {
+  // Construct the full path to the wallet file
+  const walletPath = path.join(__dirname, '..', 'wallets', filename);
+  const secretKey = JSON.parse(fs.readFileSync(walletPath, 'utf-8'));
+  return Keypair.fromSecretKey(Uint8Array.from(secretKey));
+}
+
+// Load the wallets
+const admin = loadWallet('admin-wallet.json');
+const bob = loadWallet('bob-wallet.json');
+const karen = loadWallet('karen-wallet.json');
+const bond = loadWallet('bond-wallet.json');
+const nancy = loadWallet('nancy-wallet.json');
+const roger = loadWallet('roger-wallet.json');
+
+console.log("--------------- WALLETS LOADED -----------------")
+
+/*
+// THIS IS FOR LOCAL NET ONLY
+
   //Create admin keypair
   const admin = Keypair.generate();
   //Create User (publisher) keypair
@@ -48,19 +85,6 @@ describe('PaperFi', () => {
   const nancy = Keypair.generate();
   //create User (author) keypair
   const roger = Keypair.generate();
-
-  //make collection keyair
-  const badgeCollection = Keypair.generate();
-  //make collection keyair for failed tx
-  const badgeCollection2 = Keypair.generate();
-  //make nft badge keypair
-  const badgeNFT = Keypair.generate();
-
-  //create a random id for the paper
-  const id = new BN(randomBytes(8));
-  const id2 = new BN(randomBytes(8));
-
-  const umi = createUmi('http://127.0.0.1:8899').use(mplCore());
 
   before('Preparing enviorement for testing:', async () => {
     console.log('--------- Airdroping Lamports ----------');
@@ -103,11 +127,11 @@ describe('PaperFi', () => {
     //airdrop roger
     let tx6 = await provider.connection.requestAirdrop(
       roger.publicKey,
-      5 * LAMPORTS_PER_SOL
+      3 * LAMPORTS_PER_SOL
     );
     await confirmTransaction(connection, tx6, 'confirmed');
   });
-
+*/
   //------------------- Initialize PaperFi tests --------------------
   it('Initialize PaperFi and admin account', async () => {
     console.log('------- Initializing Paperfi ------------');
@@ -622,7 +646,7 @@ describe('PaperFi', () => {
     console.log('------- User Creating Paper --------------');
 
     let paper_info_url = 'www.arwee.yourinfo.com/paper';
-    let price = new BN(1000000000);
+    let price = new BN(100000000);
     let uri = 'www.arwee.com/paper';
 
     const userAccountWallet = await PublicKey.findProgramAddressSync(
@@ -760,7 +784,7 @@ describe('PaperFi', () => {
     const editPaperParams = {
       paperInfoUrl: null,
       listed: null,
-      price: new BN(500000000),
+      price: new BN(50000000),
       version: null,
       paperUri: null,
     };
