@@ -33,15 +33,17 @@ Make sure you have the following installed:
 
 ### Install Dependencies
 
-```bash
+```
 yarn install
+```
 
 ### Clone and Build
 
-```bash
+```
 git clone https://github.com/Jars1987/PaperFI.git
 cd PaperFI
 anchor build
+```
 
 ## 🛠 Tech Stack
 
