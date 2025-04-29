@@ -1,52 +1,70 @@
-# PaperFi
+# 📄 PaperFI
 
-# Project Overview
+PaperFI is a decentralized academic research marketplace built on Solana. It empowers researchers to publish, sell, and share their work without relying on traditional gatekeepers. The platform uses NFT technology to manage ownership, access, and reputation while preserving the integrity of peer review.
 
-## Capstone Project Name/Idea:
+## 🔍 Overview
 
-PaperFi - Research Paper Finance.
+PaperFI allows authors to mint their research papers as NFTs and list them for sale, review, or public access. Reviewers are incentivized to provide high-quality feedback, and all transactions are secured on-chain using Solana smart contracts.
 
-## Brief Project Description:
+This project consists of two main components:
+- 🧠 **Solana Program**: A smart contract (using Anchor) that handles the logic for publishing papers, submitting reviews, and minting badges.
+- 🌐 **Frontend Interface** *(planned/under development)*: A user-facing DApp to interact with the program seamlessly.
 
-PaperFi is a decentralized platform designed to revolutionize academic
-publishing by providing a marketplace where researchers can publish and monetize
-their work without reliance on traditional journals. The papers are published
-on-chain ensuring transparency, secure access through encryption, and
-decentralized storage. Researchers earn revenue directly from paper sales, and
-NFT-based achievement badges incentivize active participation and high-quality
-contributions.
+## ✨ Features
 
-## Reason for Choosing this Project:
+- Decentralized publishing and access to research
+- Mint research papers as NFTs with encrypted content
+- Peer review system with incentives
+- Badge NFT rewards for contributors (e.g. reviewers, publishers)
+- Collection-verified NFTs for authenticity
+- Governance-ready architecture
 
-PaperFi addresses critical issues in academic publishing, such as monopolization
-by centralized journals that impose high access costs and restrict researchers'
-control over their work. As a pharmacist and blockchain enthusiast, I aim to
-apply the principles of decentralization to make scientific knowledge more
-accessible and empower researchers worldwide.
 
-### Target Audience:
+## 🚀 Getting Started
 
-The main target are the researchers and academics by serving them with an
-alternative to publishing. Attached to researchers we will have universities,
-research institutions, libraries, and independent learners interested in
-accessing cutting-edge research. Academics are more prone to be onboarded to a
-blockchain like Solana.
+### Prerequisites
 
-## Competitive Landscape
+Make sure you have the following installed:
 
-### Competitors:
+- [Node.js](https://nodejs.org/) (v16+ recommended)
+- [Anchor](https://book.anchor-lang.com/)
+- [Solana CLI](https://docs.solana.com/cli/install-solana-cli)
+- [Yarn](https://yarnpkg.com/)
 
-ResearchHub and traditional academic publishers.
+### Install Dependencies
 
-### Differentiators:
+```bash
+yarn install
 
-- PDA-based on-chain storage for paper metadata (no limitations on sales).
-- Secure, one-time-use decryption mechanisms for paper access.
-- Peer review functionality with public reviews visible on paper pages.
-- No APC (Article Processing Charges).
-- Achievement badges as NFTs to incentivize contributions.
-- Revenue from direct sales without secondary market dependency.
-- Researchers can pay other renowned researchers or freelancers to review
-  research
-- Teams can hire researchers to do particular research
-- Weekly Newsletter with Research/community updates
+### Clone and Build
+
+```bash
+git clone https://github.com/Jars1987/PaperFI.git
+cd PaperFI
+anchor build
+
+## 🛠 Tech Stack
+
+- Solana – High-performance blockchain
+- Anchor – Framework for Solana smart contracts
+- Rust – For the on-chain program logic
+- TypeScript – For tests and interaction scripts
+- Metaplex – For NFT standards and metadata
+
+## 🧪 Example Use Cases
+
+🧑‍🔬 A researcher publishes a paper as an NFT with restricted access.
+📖 Another user buys access, triggering royalties to the author.
+🧑‍⚖️ A third party reviews the paper and earns a “Reviewer” NFT badge.
+
+## 🗺 Roadmap
+
+ Check - Paper publishing and NFT minting
+ Check - Review system with incentives
+ Check - Badge system
+ Loading - Frontend DApp (React + Wallet Adapter)
+ Loading - DAO-based governance layer
+
+## 📜 License
+This project is licensed under the MIT License
+
